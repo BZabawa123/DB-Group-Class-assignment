@@ -1,0 +1,111 @@
+-- Delimiter change for creating multiple triggers
+DELIMITER //
+
+-- Trigger to prevent overlapping events in the same location
+CREATE TRIGGER prevent_overlapping_events
+BEFORE INSERT ON Events
+FOR EACH ROW
+BEGIN
+    DECLARE overlap_count INT;
+    
+    -- Check for events with time overlap in the same location
+    SELECT COUNT(*) INTO overlap_count
+    FROM Events
+    WHERE Location = NEW.Location
+      AND Date(Time) = Date(NEW.Time)
+      AND (
+          (NEW.Time BETWEEN Time AND DATE_ADD(Time, INTERVAL 1 HOUR))
+          OR 
+          (Time BETWEEN NEW.Time AND DATE_ADD(NEW.Time, INTERVAL 1 HOUR))
+      );
+    
+    -- Raise an error if there's an overlap
+    IF overlap_count > 0 THEN
+        SIGNAL SQLSTATE '45000' 
+        SET MESSAGE_TEXT = 'Event time conflicts with an existing event at this location';
+    END IF;
+END//
+
+-- Trigger to manage RSO status based on member count
+CREATE TRIGGER update_rso_status_on_member_join
+AFTER INSERT ON Students_RSOs
+FOR EACH ROW
+BEGIN
+    DECLARE member_count INT;
+    
+    -- Count members in the RSO
+    SELECT COUNT(*) INTO member_count
+    FROM Students_RSOs
+    WHERE RSO_ID = NEW.RSO_ID;
+    
+    -- Update RSO status to active if more than 4 members
+    IF member_count >= 5 THEN
+        UPDATE RSOs
+        SET Status = 'active'
+        WHERE RSOID = NEW.RSO_ID;
+    END IF;
+END//
+
+-- Trigger to manage RSO status when members leave
+CREATE TRIGGER update_rso_status_on_member_leave
+AFTER DELETE ON Students_RSOs
+FOR EACH ROW
+BEGIN
+    DECLARE member_count INT;
+    
+    -- Count remaining members in the RSO
+    SELECT COUNT(*) INTO member_count
+    FROM Students_RSOs
+    WHERE RSO_ID = OLD.RSO_ID;
+    
+    -- Update RSO status to inactive if less than 5 members
+    IF member_count < 5 THEN
+        UPDATE RSOs
+        SET Status = 'inactive'
+        WHERE RSOID = OLD.RSO_ID;
+    END IF;
+END//
+
+-- Trigger to limit event creation to active RSOs
+CREATE TRIGGER limit_event_creation_to_active_rsos
+BEFORE INSERT ON Events
+FOR EACH ROW
+BEGIN
+    DECLARE rso_status VARCHAR(20);
+    
+    -- Get the status of the RSO trying to create the event
+    SELECT Status INTO rso_status
+    FROM RSOs
+    WHERE RSOID = NEW.RSOID;
+    
+    -- Prevent event creation if RSO is not active
+    IF rso_status != 'active' THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Only active RSOs can create events';
+    END IF;
+END//
+
+-- Trigger to validate user ratings
+CREATE TRIGGER validate_user_ratings
+BEFORE INSERT ON Users
+FOR EACH ROW
+BEGIN
+    IF NEW.Rating < 0 OR NEW.Rating > 5 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'User rating must be between 0 and 5';
+    END IF;
+END//
+
+-- Trigger to validate comment ratings
+CREATE TRIGGER validate_comment_ratings
+BEFORE INSERT ON Comments
+FOR EACH ROW
+BEGIN
+    IF NEW.Rating < 0 OR NEW.Rating > 5 THEN
+        SIGNAL SQLSTATE '45000'
+        SET MESSAGE_TEXT = 'Comment rating must be between 0 and 5';
+    END IF;
+END//
+
+-- Reset delimiter
+DELIMITER ;

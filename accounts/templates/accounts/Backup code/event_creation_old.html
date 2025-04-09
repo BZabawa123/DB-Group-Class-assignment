@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Event</title>
+
+    <!-- Bootstrap & Flatpickr CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css" rel="stylesheet">
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding: 20px;
+        }
+        .event-form-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        .form-header {
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-control {
+            padding: 12px;
+            border-radius: 6px;
+        }
+        .form-control:focus {
+            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+            border-color: #86b7fe;
+        }
+        .btn-primary {
+            padding: 12px 24px;
+            background-color: #0d6efd;
+            border: none;
+            transition: all 0.3s;
+        }
+        .btn-primary:hover {
+            background-color: #0b5ed7;
+            transform: translateY(-2px);
+        }
+        textarea {
+            min-height: 100px;
+        }
+        .date-time-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+        }
+        label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: block;
+        }
+        #map {
+            height: 400px;
+            border: 1px solid #ccc;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="event-form-container">
+        <div class="form-header">
+            <h2>Create New Event</h2>
+            <p class="text-muted">Fill out the form below to create your event</p>
+        </div>
+
+        <form method="POST">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label for="event_name">Event Name</label>
+                {{ event_form.event_name|safe }}
+            </div>
+
+            <div class="form-group">
+                <label for="category">Category</label>
+                {{ event_form.category|safe }}
+            </div>
+
+            <div class="form-group">
+                <label for="description">Description</label>
+                {{ event_form.description|safe }}
+            </div>
+
+            <div class="date-time-group">
+                <div class="form-group">
+                    <label for="event_date">Event Date</label>
+                    <input type="text" id="event_date" name="event_date" class="form-control datepicker" placeholder="Select date">
+                </div>
+
+                <div class="form-group">
+                    <label for="start_time">Start Time</label>
+                    <input type="text" id="start_time" name="start_time" class="form-control timepicker" placeholder="Select start time">
+                </div>
+
+                <div class="form-group">
+                    <label for="end_time">End Time</label>
+                    <input type="text" id="end_time" name="end_time" class="form-control timepicker" placeholder="Select end time">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="lname">Location Name</label>
+                {{ event_form.lname|safe }}
+            </div>
+
+            <div class="form-group">
+                <label>Select Location on Map</label>
+                <div id="map"></div>
+                <input type="hidden" id="latitude" name="latitude">
+                <input type="hidden" id="longitude" name="longitude">
+                <p class="text-muted mt-2" id="location-display">No location selected.</p>
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="privacy">Privacy</label>
+                        {{ privacy_form.privacy|safe }}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="rso">RSO (if applicable)</label>
+                        {{ privacy_form.rso|safe }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group text-center mt-4">
+                <button type="submit" class="btn btn-primary">Create Event</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- JS Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Date and time pickers
+            flatpickr(".datepicker", {
+                dateFormat: "Y-m-d",
+                minDate: "today"
+            });
+
+            flatpickr(".timepicker", {
+                enableTime: true,
+                noCalendar: true,
+                dateFormat: "H:i",
+                time_24hr: true
+            });
+
+            // Auto-fill end time
+            const startTimePicker = document.getElementById('start_time');
+            const endTimePicker = document.getElementById('end_time');
+            startTimePicker.addEventListener('change', function() {
+                if (startTimePicker.value && !endTimePicker.value) {
+                    const startTime = startTimePicker._flatpickr.selectedDates[0];
+                    const endTime = new Date(startTime);
+                    endTime.setHours(endTime.getHours() + 1);
+                    endTimePicker._flatpickr.setDate(endTime);
+                }
+            });
+
+            // Initialize Leaflet map
+            var map = L.map('map').setView([28.6024, -81.2001], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            var marker;
+
+            map.on('click', function(e) {
+                if (marker) {
+                    map.removeLayer(marker);
+                }
+                marker = L.marker(e.latlng).addTo(map);
+
+                const lat = e.latlng.lat.toFixed(5);
+                const lng = e.latlng.lng.toFixed(5);
+
+                document.getElementById('latitude').value = lat;
+                document.getElementById('longitude').value = lng;
+                document.getElementById('location-display').innerText =
+                    `Selected Location: (${lat}, ${lng})`;
+            });
+        });
+    </script>
+</body>
+</html>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Event</title>
+
+    <!-- Bootstrap & Flatpickr CSS -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css" rel="stylesheet">
+
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding: 20px;
+        }
+        .event-form-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        .form-header {
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-control {
+            padding: 12px;
+            border-radius: 6px;
+        }
+        .form-control:focus {
+            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+            border-color: #86b7fe;
+        }
+        .btn-primary {
+            padding: 12px 24px;
+            background-color: #0d6efd;
+            border: none;
+            transition: all 0.3s;
+        }
+        .btn-primary:hover {
+            background-color: #0b5ed7;
+            transform: translateY(-2px);
+        }
+        textarea {
+            min-height: 100px;
+        }
+        .date-time-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+        }
+        label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: block;
+        }
+        #map {
+            height: 400px;
+            border: 1px solid #ccc;
+            margin-top: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="event-form-container">
+        <div class="form-header">
+            <h2>Create New Event</h2>
+            <p class="text-muted">Fill out the form below to create your event</p>
+        </div>
+
+        <form method="POST">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label for="event_name">Event Name</label>
+                {{ event_form.event_name|safe }}
+            </div>
+
+            <div class="form-group">
+                <label for="category">Category</label>
+                {{ event_form.category|safe }}
+            </div>
+
+            <div class="form-group">
+                <label for="description">Description</label>
+                {{ event_form.description|safe }}
+            </div>
+
+            <div class="date-time-group">
+                <div class="form-group">
+                    <label for="event_date">Event Date</label>
+                    <input type="text" id="event_date" name="event_date" class="form-control datepicker" placeholder="Select date">
+                </div>
+
+                <div class="form-group">
+                    <label for="start_time">Start Time</label>
+                    <input type="text" id="start_time" name="start_time" class="form-control timepicker" placeholder="Select start time">
+                </div>
+
+                <div class="form-group">
+                    <label for="end_time">End Time</label>
+                    <input type="text" id="end_time" name="end_time" class="form-control timepicker" placeholder="Select end time">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="lname">Location Name</label>
+                {{ event_form.lname|safe }}
+            </div>
+
+            <div class="form-group">
+                <label>Select Location on Map</label>
+                <div id="map"></div>
+                <input type="hidden" id="latitude" name="latitude">
+                <input type="hidden" id="longitude" name="longitude">
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="privacy">Privacy</label>
+                        {{ privacy_form.privacy|safe }}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="rso">RSO (if applicable)</label>
+                        {{ privacy_form.rso|safe }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group text-center mt-4">
+                <button type="submit" class="btn btn-primary">Create Event</button>
+            </div>
+        </form>
+    </div>
+
+    <!-- JS Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Date and time pickers
+            flatpickr(".datepicker", {
+                dateFormat: "Y-m-d",
+                minDate: "today"
+            });
+
+            flatpickr(".timepicker", {
+                enableTime: true,
+                noCalendar: true,
+                dateFormat: "H:i",
+                time_24hr: true
+            });
+
+            // Auto-fill end time to 1 hour after start time
+            const startTimePicker = document.getElementById('start_time');
+            const endTimePicker = document.getElementById('end_time');
+
+            startTimePicker.addEventListener('change', function() {
+                if (startTimePicker.value && !endTimePicker.value) {
+                    const startTime = startTimePicker._flatpickr.selectedDates[0];
+                    const endTime = new Date(startTime);
+                    endTime.setHours(endTime.getHours() + 1);
+                    endTimePicker._flatpickr.setDate(endTime);
+                }
+            });
+
+            // Leaflet map initialization
+            var map = L.map('map').setView([28.6024, -81.2001], 13);
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            var marker;
+
+            map.on('click', function(e) {
+                if (marker) {
+                    map.removeLayer(marker);
+                }
+                marker = L.marker(e.latlng).addTo(map);
+                document.getElementById('latitude').value = e.latlng.lat;
+                document.getElementById('longitude').value = e.latlng.lng;
+            });
+        });
+    </script>
+</body>
+</html>
+
+<!-- <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Event</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f8f9fa;
+            padding: 20px;
+        }
+        .event-form-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+        }
+        .form-header {
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-control {
+            padding: 12px;
+            border-radius: 6px;
+        }
+        .form-control:focus {
+            box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.25);
+            border-color: #86b7fe;
+        }
+        .btn-primary {
+            padding: 12px 24px;
+            background-color: #0d6efd;
+            border: none;
+            transition: all 0.3s;
+        }
+        .btn-primary:hover {
+            background-color: #0b5ed7;
+            transform: translateY(-2px);
+        }
+        textarea {
+            min-height: 100px;
+        }
+        .date-time-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 15px;
+        }
+        label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="event-form-container">
+        <div class="form-header">
+            <h2>Create New Event</h2>
+            <p class="text-muted">Fill out the form below to create your event</p>
+        </div>
+
+        <form method="POST">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label for="event_name">Event Name</label>
+                {{ event_form.event_name|safe }}
+            </div>
+
+            <div class="form-group">
+                <label for="category">Category</label>
+                {{ event_form.category|safe }}
+            </div>
+
+            <div class="form-group">
+                <label for="description">Description</label>
+                {{ event_form.description|safe }}
+            </div>
+
+            <div class="date-time-group">
+                <div class="form-group">
+                    <label for="event_date">Event Date</label>
+                    <input type="text" id="event_date" name="event_date" class="form-control datepicker" placeholder="Select date">
+                </div>
+
+                <div class="form-group">
+                    <label for="start_time">Start Time</label>
+                    <input type="text" id="start_time" name="start_time" class="form-control timepicker" placeholder="Select start time">
+                </div>
+
+                <div class="form-group">
+                    <label for="end_time">End Time</label>
+                    <input type="text" id="end_time" name="end_time" class="form-control timepicker" placeholder="Select end time">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="lname">Location</label>
+                {{ event_form.lname|safe }}
+            </div>
+
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="privacy">Privacy</label>
+                        {{ privacy_form.privacy|safe }}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label for="rso">RSO (if applicable)</label>
+                        {{ privacy_form.rso|safe }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group text-center mt-4">
+                <button type="submit" class="btn btn-primary">Create Event</button>
+            </div>
+        </form>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.3.0/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/flatpickr/4.6.13/flatpickr.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Initialize date picker
+            flatpickr(".datepicker", {
+                dateFormat: "Y-m-d",
+                minDate: "today"
+            });
+
+            // Initialize time pickers
+            flatpickr(".timepicker", {
+                enableTime: true,
+                noCalendar: true,
+                dateFormat: "H:i",
+                time_24hr: true
+            });
+
+            // Automatically adjust end time when start time changes
+            const startTimePicker = document.getElementById('start_time');
+            const endTimePicker = document.getElementById('end_time');
+
+            startTimePicker.addEventListener('change', function() {
+                if (startTimePicker.value && !endTimePicker.value) {
+                    // Get start time, add 1 hour for default duration
+                    const startTime = startTimePicker._flatpickr.selectedDates[0];
+                    const endTime = new Date(startTime);
+                    endTime.setHours(endTime.getHours() + 1);
+
+                    // Set end time
+                    endTimePicker._flatpickr.setDate(endTime);
+                }
+            });
+        });
+    </script>
+</body>
+</html> -->

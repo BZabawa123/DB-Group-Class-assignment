@@ -1,0 +1,64 @@
+-- Users Table
+CREATE TABLE Users (
+    UID VARCHAR(50) PRIMARY KEY,
+    Text TEXT,
+    Rating DECIMAL(3,2)
+);
+
+-- Location Table
+CREATE TABLE Location (
+    LocationID INT AUTO_INCREMENT PRIMARY KEY,
+    Name VARCHAR(100),
+    Address VARCHAR(255)
+);
+
+-- RSOs Table
+CREATE TABLE RSOs (
+    RSOID INT AUTO_INCREMENT PRIMARY KEY,
+    Name VARCHAR(100)
+);
+
+-- Admins Table
+CREATE TABLE Admins 
+(
+    AdminID INT AUTO_INCREMENT PRIMARY KEY,
+    Name VARCHAR(100)
+);
+
+-- SuperAdmins Table
+CREATE TABLE SuperAdmins 
+(
+    SuperAdminID INT AUTO_INCREMENT PRIMARY KEY,
+    Name VARCHAR(100)
+);
+
+-- Events Table
+CREATE TABLE Events 
+(
+    EventID INT AUTO_INCREMENT PRIMARY KEY,
+    Time DATETIME,
+    Location INT,
+    Desc TEXT,
+    At INT,
+    RSOID INT,
+    AdminID INT,
+    SuperAdminID INT,
+    FOREIGN KEY (Location) REFERENCES Location(LocationID),
+    FOREIGN KEY (At) REFERENCES Location(LocationID),
+    FOREIGN KEY (RSOID) REFERENCES RSOs(RSOID),
+    FOREIGN KEY (AdminID) REFERENCES Admins(AdminID),
+    FOREIGN KEY (SuperAdminID) REFERENCES SuperAdmins(SuperAdminID)
+);
+
+-- Comments Table
+CREATE TABLE Comments 
+(
+    CommentID INT AUTO_INCREMENT PRIMARY KEY,
+    EventID INT,
+    UID VARCHAR(50),
+    Text TEXT,
+    Rating DECIMAL(3,2),
+    Timestamp DATETIME,
+    FOREIGN KEY (EventID) REFERENCES Events(EventID),
+    FOREIGN KEY (UID) REFERENCES Users(UID)
+);

@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>RSO Events Home</title>
+    <link rel="stylesheet" href="{% static 'rso_events/style.css' %}">
+</head>
+<body>
+    <h1>RSO List</h1>
+    {% for rso in rsos %}
+        <div>
+            <h2>{{ rso.name }}</h2>
+            <p>Status: {{ rso.status }}</p>
+        </div>
+    {% empty %}
+        <p>No RSOs available.</p>
+    {% endfor %}
+</body>
+</html>

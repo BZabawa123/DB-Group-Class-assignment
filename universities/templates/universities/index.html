@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Universities Home</title>
+    <link rel="stylesheet" href="{% static 'universities/style.css' %}">
+</head>
+<body>
+    <h1>Universities List</h1>
+    {% for uni in universities %}
+        <div>
+            <h2>{{ uni.name }}</h2>
+            <p>{{ uni.location }}</p>
+        </div>
+    {% empty %}
+        <p>No universities available.</p>
+    {% endfor %}
+</body>
+</html>

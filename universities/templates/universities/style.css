@@ -1,0 +1,112 @@
+/* Generic Reset and Body Styles */
+body {
+    background-color: #f8f9fa;
+    margin: 0;
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    color: #212529;
+  }
+
+  /* Container and Layout */
+  .container {
+    margin-top: 2rem;
+    padding: 0 15px;
+  }
+
+  /* Card Styling (used on events, RSOs, universities, etc.) */
+  .card {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    transition: transform 0.2s, box-shadow 0.2s;
+    margin-bottom: 1.5rem;
+  }
+
+  .card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Card Header for Category Colors */
+  .card-header {
+    padding: 0.75rem 1.25rem;
+    font-weight: bold;
+    border-bottom: 1px solid #ddd;
+  }
+
+  /* Optional custom category background colors */
+  .bg-social {
+    background-color: #d1ecf1;
+  }
+
+  .bg-fundraising {
+    background-color: #d4edda;
+  }
+
+  .bg-techtalk {
+    background-color: #e2e3e5;
+  }
+
+  /* Badge for Privacy or Status Indicators */
+  .privacy-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 2;
+    padding: 0.35em 0.65em;
+    font-size: 0.75rem;
+    font-weight: 600;
+    border-radius: 0.25rem;
+  }
+
+  /* List Group and Table Styles (for index lists) */
+  .list-group-item {
+    padding: 0.75rem 1.25rem;
+    border: 1px solid #ddd;
+    background-color: #fff;
+    margin-bottom: 0.5rem;
+  }
+
+  .table {
+    width: 100%;
+    margin-bottom: 1rem;
+    border-collapse: collapse;
+  }
+  .table th,
+  .table td {
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    text-align: left;
+  }
+
+  /* Responsive Grid Utilities for Cards */
+  .row {
+    display: flex;
+    flex-wrap: wrap;
+    margin-right: -0.5rem;
+    margin-left: -0.5rem;
+  }
+  .col {
+    padding-right: 0.5rem;
+    padding-left: 0.5rem;
+    flex: 1;
+    min-width: 250px;
+    margin-bottom: 1.5rem;
+  }
+
+  /* Specific Component Styles */
+  /* Headings and Auth Section (if reused on index pages) */
+  .auth-container {
+    margin-bottom: 2rem;
+    padding: 1rem;
+    border-bottom: 1px solid #eee;
+  }
+
+  /* Navigation or Filter Button Group */
+  .btn-group .btn {
+    margin-right: 0.5rem;
+  }
+
+  /* Additional Utility Classes */
+  .text-muted {
+    color: #6c757d !important;
+  }
